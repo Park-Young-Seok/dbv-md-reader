@@ -27,6 +27,16 @@ name: Release Linux
 # para esto — sin él, `tauri build` termina en exit 1 ("se ha encontrado una
 # clave pública pero no la privada") aunque el .deb/.AppImage se generen bien,
 # el mismo problema ya documentado para Windows en la Lección 16 de memory.md.
+#
+# `releaseBody` (bug real corregido 2026-09-22): tauri-action lo deja vacío
+# si no se le pasa nada — v0.16.0 y v0.17.0 salieron sin texto explicativo en
+# la Release (v0.14.0 sí lo tenía, pero porque se escribió a mano una vez y
+# no se repitió después). `scripts/extract-changelog-entry.mjs` extrae la
+# sección de la versión actual de `dbv-specs-ops/CHANGELOG.md` para que el
+# cuerpo de la Release salga siempre relleno, sin depender de que alguien se
+# acuerde de pegarlo a mano. `release-macos.yml` hace lo mismo — como ambos
+# workflows disparan sobre el mismo tag y computan el mismo texto, no importa
+# cuál de los dos actualice el cuerpo de la Release al final.
 
 on:
   push:
@@ -88,6 +98,15 @@ jobs:
       - name: Instalar dependencias de Node
         run: npm install
 
+      - name: Extraer notas de la versión desde CHANGELOG.md
+        id: changelog
+        run: |
+          {
+            echo 'body<<CHANGELOG_EOF'
+            node scripts/extract-changelog-entry.mjs
+            echo 'CHANGELOG_EOF'
+          } >> "$GITHUB_OUTPUT"
+
       - name: Build y Release (Linux)
         uses: tauri-apps/tauri-action@v0
         env:
@@ -95,6 +114,7 @@ jobs:
         with:
           tagName: ${{ steps.version.outputs.tag }}
           releaseName: ${{ steps.version.outputs.tag }}
+          releaseBody: ${{ steps.changelog.outputs.body }}
           releaseDraft: ${{ steps.draft.outputs.value }}
           prerelease: false
           includeUpdaterJson: false
