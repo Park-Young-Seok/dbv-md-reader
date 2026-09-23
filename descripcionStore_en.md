@@ -14,6 +14,7 @@ Perfect for reading and editing technical documentation, notes, GitHub project R
 
 Key features:
 • Instant opening via double-click or "Open with..."
+• Create new documents from scratch (Ctrl+N) and start editing right away
 • Edit Mode (Ctrl+E) with a live split view, a Markdown formatting toolbar, and Tab/Shift+Tab list indenting
 • Directory tree explorer and Quick Open file switcher (Ctrl+K)
 • Direct export to Typst (.typ) to keep editing the document with a Typst editor
@@ -36,14 +37,16 @@ No internet connection required to function, no personal data collected. Your do
 
 ## What's new in this version
 
-v0.16.0: new direct export to Typst (.typ) to keep editing the document with a Typst editor. Correct syntax colors when printing or exporting to PDF (they used to get lost when doing so from the Dark or Sepia theme), and always-aligned line numbers in code blocks. Also, since the previous update: GitHub-style alerts (Note, Tip, Important...), an unsaved-changes indicator in Edit Mode that confirms before discarding them, and several stability fixes (closing the window with unsaved changes, internal links with accented characters).
+v0.17.0: new "New document" button (Ctrl+N) to create a .md file from scratch and start writing straight away in Edit Mode. Typst export now keeps the HTML embedded in the document, and no longer produces a .typ file that fails to compile when a file path is followed by bold text.
+
+Also includes what was new in v0.16.0: direct export to Typst (.typ) to keep editing the document with a Typst editor, correct syntax colors when printing or exporting to PDF (they used to get lost when doing so from the Dark or Sepia theme), and always-aligned line numbers in code blocks. And from v0.13.1: GitHub-style alerts (Note, Tip, Important...), an unsaved-changes indicator in Edit Mode that confirms before discarding them, and several stability fixes (closing the window with unsaved changes, internal links with accented characters).
 
 ---
 
 ## Product features
 *(up to 20, short summaries — shown as a bulleted list)*
 
-1. Markdown reader and editor with direct save (.md)
+1. Markdown reader and editor: create new documents (Ctrl+N) or edit and save existing ones
 2. Instant opening (under 200 ms) and 100% local: no accounts, no telemetry, no ads
 3. Edit Mode with a live split view (code + preview)
 4. Markdown formatting toolbar (16 actions) + Tab/Shift+Tab list indenting
@@ -113,7 +116,7 @@ David Bueno Vallejo
 This application does not require an account, sign-in, or any kind of credentials — it works fully offline and does not collect any personal data.
 
 To test it:
-1. When opened with no file, it shows an empty screen with a button to open a file, or a `.md` file can be dragged and dropped directly onto the window.
+1. When opened with no file, it shows an empty screen with a button to open a file and another to create a new document (Ctrl+N), or a `.md` file can be dragged and dropped directly onto the window.
 2. A test file with a `.md` extension and basic Markdown content can be created, for example:
 
    ````markdown

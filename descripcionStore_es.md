@@ -14,6 +14,7 @@ Ideal para leer y editar documentación técnica, notas, README de proyectos de 
 
 Características principales:
 • Apertura instantánea por doble clic o "Abrir con..."
+• Crea documentos nuevos desde cero (Ctrl+N) y edítalos al momento
 • Modo Edición (Ctrl+E) con vista dividida en vivo, barra de formato Markdown y Tab/Shift+Tab para indentar listas
 • Explorador de árbol de directorios y selector rápido de archivos (Ctrl+K)
 • Exportación directa a Typst (.typ) para seguir editando el documento con un editor de Typst
@@ -36,14 +37,16 @@ Sin conexión a internet requerida para funcionar, sin recopilación de datos pe
 
 ## Novedades de esta versión
 
-v0.16.0: nueva exportación directa a Typst (.typ) para seguir editando el documento con un editor de Typst. Colores de sintaxis correctos al imprimir o exportar a PDF (antes se perdían al hacerlo desde el tema Oscuro o Sepia) y numeración de línea siempre alineada en los bloques de código. Además, desde la actualización anterior: alertas al estilo GitHub (Nota, Consejo, Importante...), indicador de cambios sin guardar en Modo Edición con confirmación antes de descartarlos, y varias correcciones de estabilidad (cierre de ventana con cambios sin guardar, enlaces internos con tildes/ñ).
+v0.17.0: nuevo botón "Nuevo documento" (Ctrl+N) para crear un archivo .md desde cero y empezar a escribir directamente en Modo Edición. La exportación a Typst ahora conserva el HTML embebido en el documento y ya no genera un .typ que no compila cuando una ruta de archivo va seguida de texto en negrita.
+
+Incluye también las novedades de v0.16.0: exportación directa a Typst (.typ) para seguir editando el documento con un editor de Typst, colores de sintaxis correctos al imprimir o exportar a PDF (antes se perdían al hacerlo desde el tema Oscuro o Sepia) y numeración de línea siempre alineada en los bloques de código. Y de v0.13.1: alertas al estilo GitHub (Nota, Consejo, Importante...), indicador de cambios sin guardar en Modo Edición con confirmación antes de descartarlos, y varias correcciones de estabilidad (cierre de ventana con cambios sin guardar, enlaces internos con tildes/ñ).
 
 ---
 
 ## Características del producto
 *(máximo 20, resúmenes breves — se muestran como lista con viñetas)*
 
-1. Lector y editor de Markdown con guardado directo (.md)
+1. Lector y editor de Markdown: crea documentos nuevos (Ctrl+N) o edita y guarda los existentes
 2. Apertura instantánea (menos de 200 ms) y 100% local: sin cuentas, sin telemetría, sin publicidad
 3. Modo Edición con vista dividida en vivo (código + previsualización)
 4. Barra de formato Markdown (16 acciones) + Tab/Shift+Tab para indentar listas
@@ -113,7 +116,7 @@ David Bueno Vallejo
 Esta aplicación no requiere cuenta, inicio de sesión ni credenciales de ningún tipo — funciona completamente sin conexión a internet y no recopila ningún dato personal.
 
 Para probarla:
-1. Al abrirla sin ningún archivo, se muestra una pantalla vacía con un botón para abrir un archivo, o se puede arrastrar y soltar directamente un archivo .md sobre la ventana.
+1. Al abrirla sin ningún archivo, se muestra una pantalla vacía con un botón para abrir un archivo y otro para crear un documento nuevo (Ctrl+N), o se puede arrastrar y soltar directamente un archivo .md sobre la ventana.
 2. Se puede crear un archivo de prueba con extensión .md y contenido Markdown básico, por ejemplo:
 
    ````markdown
