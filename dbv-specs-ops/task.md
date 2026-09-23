@@ -1,5 +1,20 @@
 # 📋 Backlog & Task Tracking: dbv-md-reader
 
+> ⏭️ **SNAPSHOT DE CONTEXTO (2026-09-23) — `v0.17.0` enviada a certificación en Microsoft Store.**
+>
+> **Estado:** tag `v0.17.0` ya publicado en `origin` (Release de GitHub con CI). Al revisar el cierre de la Fase 40 se detectó que faltaba el paquete MSIX de la versión y la ficha de la Store seguía en `v0.16.0`:
+> 1. **`.msixbundle` generado:** `npm run tauri:windows:build` (build de release completo, sin firmar — la Store re-firma) → `src-tauri/target/msix/dbv-md-reader_0.17.0.0.msixbundle`. Identidad del `AppxManifest.xml` verificada (`davidbuenov.DBVMarkdownReader`, `CN=13EE2A5D-…`, `Version=0.17.0.0`) y los 4 assets de `src-tauri/gen/windows/Assets/` sin placeholders (296–669 colores únicos, checklist §5.8bis).
+> 2. **Ficha actualizada** (`descripcionStore_{es,en}.md`): "Novedades" encabezadas por `v0.17.0` (Nuevo documento RF-29 con Ctrl+N + fixes de exportación a Typst), conservando las de `v0.16.0` y `v0.13.1` porque la última versión en vivo confirmada era `v0.13.0` y no consta que `v0.16.0` llegara a subirse. "Nuevo documento" añadido a la descripción larga, al punto 1 de características y a las notas de certificación.
+> 3. **Enviado a certificación en Partner Center por el usuario el 2026-09-23.** `docs/MICROSOFT_STORE.md` actualizado con el estado.
+>
+> **Commits:** `177db38` (ficha + MICROSOFT_STORE.md) y el de este snapshot. `master` va por delante de `origin/master` (incluye también `81488ae`, fix de CI del cuerpo de la Release) — **pendiente `git push`, solo con confirmación del usuario.**
+>
+> **Sin tocar (cambios del usuario sin commitear, no relacionados):** `descripcionStoreUptoDown_{es,en}.md` (ficha de Mac centrada en `v0.12.0`), `dbv-specs-ops/BENCHMARK_RESULTS.md` y los borradores sin seguimiento `actualizacion_dbv_specs_ops.md`, `linkedin_post_v0.4.0.md`, `youtube_video_v0.8.0.md`.
+>
+> **Siguiente paso:** esperar el resultado de la certificación de Microsoft (~3 días hábiles); si se rechaza, revisar el informe contra `docs/MICROSOFT_STORE.md` §4bis/§5. Pendientes abiertos: decidir si actualizar la ficha de Uptodown (Mac) a `v0.17.0`; Google Play no cambia (RF-29 no aplica en Android).
+
+---
+
 > ⏭️ **SNAPSHOT DE CONTEXTO (2026-09-22) — Fase 40: Fix de bug reportado en el foro de Typst (RF-27) + Nuevo documento (RF-29) — ciclo `/build` → `/test` → `/code-simplify` → `/ship` COMPLETO, versión `0.17.0`.**
 >
 > **Origen:** Johannes Rexx reportó en el foro de Typst que exportar un documento real (una cita en bloque con una traza de Python) perdía contenido en silencio al exportar a `.typ` — una etiqueta suelta como `<module>` desaparecía por completo — y que el `.typ` resultante daba "unclosed delimiter" al compilar.
