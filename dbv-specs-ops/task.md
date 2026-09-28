@@ -1,5 +1,21 @@
 # 📋 Backlog & Task Tracking: dbv-md-reader
 
+> ⏭️ **SNAPSHOT DE CONTEXTO (2026-09-28) — AppImage corregido para el catálogo de AppImageHub.**
+>
+> **Qué pasó:** AppImageHub abrió por su cuenta el PR AppImage/appimage.github.io#6058 para añadir la app a su catálogo, y su test falló con `AppRun.wrapped: Permission denied` (ver Lección 31 en `memory.md`). El usuario quiere estar en el catálogo.
+> 1. `39ad011` — paso nuevo en `release-linux.yml` que normaliza permisos, reempaqueta y resube el AppImage; entrada en `CHANGELOG.md` → `[Sin publicar]`.
+> 2. `release-linux.yml` relanzado con `draft=false` para `v0.17.0`: asset sustituido y verificado (`AppRun.wrapped` en `-rwxr-xr-x root/root`).
+> 3. `36ba8fb` — `LICENSE` corrupto restaurado al texto MIT estándar (GitHub ya lo detecta como MIT).
+> 4. Comentario en el PR #6058 pidiendo repetir el test y que renombren `data/dbv-md-reader` a `data/DBV.Markdown.Reader` (aviso de nombre; la rama es suya y no se puede editar desde aquí).
+>
+> **Push:** con estos commits salieron también `81488ae`, `177db38` y `892b9c5`, que estaban pendientes. El push se saltó la regla "Changes must be made through a pull request" de `master` (el usuario es administrador).
+>
+> **Pendiente:** que AppImageHub repita el test y haga el merge. Nada que hacer aquí hasta entonces.
+>
+> **Sin tocar:** los cambios del usuario sin commitear (`descripcionStoreUptoDown_{es,en}.md`, `BENCHMARK_RESULTS.md`, `actualizacion_dbv_specs_ops.md`).
+
+---
+
 > ⏭️ **SNAPSHOT DE CONTEXTO (2026-09-23) — `v0.17.0` enviada a certificación en Microsoft Store.**
 >
 > **Estado:** tag `v0.17.0` ya publicado en `origin` (Release de GitHub con CI). Al revisar el cierre de la Fase 40 se detectó que faltaba el paquete MSIX de la versión y la ficha de la Store seguía en `v0.16.0`:

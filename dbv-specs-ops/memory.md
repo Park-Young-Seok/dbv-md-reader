@@ -6,6 +6,13 @@
 
 ## 🏗️ Log de Decisiones Técnicas (ADR)
 
+### [2026-09-28] Lección 31: El `.AppImage` no arrancaba si lo ejecutaba otro usuario — y ninguna prueba manual podía verlo
+- **Qué pasó:** el bot `discover-apps.yml` de AppImageHub abrió por su cuenta el PR AppImage/appimage.github.io#6058 para añadir la app a su catálogo. Su test falló con `AppRun.wrapped: Permission denied`.
+- **Causa:** linuxdeploy (dentro de `tauri build`) deja `AppRun.wrapped` en `0770`, y el squashfs es de root. Ejecutado normalmente, el runtime FUSE monta los ficheros con el uid del usuario y funciona; firejail lo ejecuta como "otros" y falla. Diagnosticado con `unsquashfs -lls` sobre el AppImage publicado, desde WSL.
+- **Arreglo:** paso nuevo en `release-linux.yml` tras `tauri-action`: extrae el AppImage, `chmod -R u+rwX,go+rX,go-w`, reempaqueta con `appimagetool`, verifica sobre el AppImage ya reempaquetado y sustituye el asset con `gh release upload --clobber`. GitHub guarda el asset con los espacios cambiados por puntos, así que se sube una copia ya renombrada o `--clobber` no la encuentra. Asset de `v0.17.0` sustituido relanzando el workflow con `draft=false` y verificado (`AppRun.wrapped` en `-rwxr-xr-x`). El Cask de Homebrew de este repo solo usa el `.dmg`, así que no hubo que tocarlo.
+- **De paso:** el `LICENSE` tenía una línea corrupta («without restrictionlimitation») y GitHub lo mostraba como «Other»; restaurado el texto MIT estándar, ya detectado como MIT.
+- **Origen común:** dbv-typst-editor tenía el mismo fallo el mismo día porque los dos copiaron el mismo `release-linux.yml`. La lección está ahora en el framework (`NATIVE_APPS_RELEASE_CI.md` §6ter) y en `dbv-tauri-starter`.
+
 ### [2026-09-19] ADR-047: Windows pasa a distribuirse solo por Microsoft Store — se descontinúa el instalador NSIS firmado en GitHub Releases
 - **Contexto:** al llegar el momento de generar el build de Windows de `v0.16.0` para GitHub Releases, se descubrió que la contraseña de la clave de firma `minisign` (`~/.tauri-keys/dbv-md-reader.key`) ya no está disponible — vivía en una conversación anterior a la norma de no guardar secretos en el chat, y el usuario solo conserva la contraseña de otra clave (`dbv-eer-studio`), no la de esta.
 - **Decisión del usuario:** en vez de generar una clave nueva (que invalidaría el auto-update de todas las instalaciones NSIS ya existentes, al llevar la clave pública antigua incrustada) o bloquear el ciclo hasta recuperarla, se descontinúa el canal NSIS de GitHub Releases para Windows **a partir de `v0.16.0`**, igual que ya ocurre con Android (Google Play, sin réplica en GitHub Releases desde el principio). Motivación explícita: la Store ya funciona bien y actualiza rápido, sin el coste de mantener una clave de firma propia.
