@@ -7,6 +7,10 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
 
 ## [Sin publicar]
 
+### Corregido
+
+- **El AppImage no arrancaba si lo ejecutaba otro usuario (catálogo de AppImageHub).** linuxdeploy, dentro de `tauri build`, dejaba `AppRun.wrapped` con permisos `0770` en un squashfs cuyo dueño es root. En un escritorio no se notaba porque el runtime FUSE monta los ficheros con el uid del usuario, pero el test con firejail del catálogo de AppImageHub (PR AppImage/appimage.github.io#6058) recibía `Permission denied` y la app no llegaba a abrirse. `release-linux.yml` añade un paso tras el build que extrae el AppImage, normaliza los permisos (`u+rwX,go+rX,go-w`), lo reempaqueta con `appimagetool`, verifica sobre el AppImage ya reempaquetado que no queda ningún fichero sin lectura para otros ni con escritura para todos, y sustituye el asset de la Release con `gh release upload --clobber` (el nombre local se pasa a puntos, como lo guarda GitHub). El `.deb` no se toca.
+
 ---
 
 ## [0.17.0] - 2026-09-22
