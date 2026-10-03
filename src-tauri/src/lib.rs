@@ -822,6 +822,15 @@ pub fn run() {
         // plugin).
         builder = builder.plugin(tauri_plugin_updater::Builder::new().build());
 
+        // Restaura la posición/tamaño de la ventana principal al arrancar. Las ventanas
+        // extra (`doc-N`, etiqueta distinta en cada apertura) no se recuerdan para no
+        // acumular entradas en el archivo de estado.
+        builder = builder.plugin(
+            tauri_plugin_window_state::Builder::default()
+                .with_filter(|label| label == "main")
+                .build(),
+        );
+
         builder = builder.plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
             // RF-14: un doble clic / "Abrir con" en un .md mientras la app ya está en
             // marcha no debe lanzar un proceso dbv-md-reader.exe nuevo — abre una

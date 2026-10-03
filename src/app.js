@@ -393,7 +393,9 @@
           // recién creado en blanco (RF-29, `createNewFile()`), donde no hay
           // nada que "leer" y forzar al usuario a pulsar editar sería un paso
           // extra sin sentido.
-          setEditMode(!!opts.startInEditMode);
+          // Salvo documento en blanco recién creado, respeta la preferencia guardada del
+          // usuario (modo edición activado/desactivado la última vez que lo cambió a mano).
+          setEditMode(!!opts.startInEditMode || (getEditPref() && !isAndroid && !isRemoteDoc(doc)));
           btnEditToggle.disabled = isRemoteDoc(doc); // sin guardado posible sobre una URL (RF-08A)
           if (isAndroid) {
             btnEditToggle.classList.add('hidden');
@@ -412,7 +414,11 @@
           emptyEl.classList.add('hidden');
           contentEl.classList.remove('hidden');
           // Auto-abrir TOC si tiene encabezados en pantalla ancha (>768px); en móvil permanece cerrado hasta toggle explícito
-          if (tocHeaders.length > 0 && window.innerWidth > 768) {
+          // Preferencia explícita del usuario (abrir/cerrar a mano) manda sobre el auto-abrir.
+          var tocPref = getTocPref();
+          if (window.innerWidth > 768 && tocPref === 'closed') {
+            setTocVisible(false);
+          } else if (window.innerWidth > 768 && (tocHeaders.length > 0 || tocPref === 'open')) {
             setTocVisible(true);
           } else {
             setTocVisible(false);
@@ -974,6 +980,14 @@
     });
   }
 
+  // Recuerda si el usuario dejó el panel lateral abierto o cerrado ('open' | 'closed' | null).
+  function getTocPref() {
+    try { return localStorage.getItem('dbv-md-toc-pref'); } catch (_) { return null; }
+  }
+  function saveTocPref(visible) {
+    try { localStorage.setItem('dbv-md-toc-pref', visible ? 'open' : 'closed'); } catch (_) {}
+  }
+
   // Muestra/oculta el TOC y su divisor arrastrable juntos (mismo estado siempre).
   function setTocVisible(visible) {
     tocSidebar.classList.toggle('hidden', !visible);
@@ -1081,7 +1095,9 @@
   });
 
   document.getElementById('btn-toggle-toc').addEventListener('click', function () {
-    setTocVisible(tocSidebar.classList.contains('hidden'));
+    var show = tocSidebar.classList.contains('hidden');
+    setTocVisible(show);
+    saveTocPref(show);
   });
 
   // =========================================================================
@@ -1090,16 +1106,18 @@
 
   var btnLangs = {
     es: document.getElementById('lang-es'),
-    en: document.getElementById('lang-en')
+    en: document.getElementById('lang-en'),
+    ko: document.getElementById('lang-ko')
   };
 
   var mBtnLangs = {
     es: document.getElementById('m-lang-es'),
-    en: document.getElementById('m-lang-en')
+    en: document.getElementById('m-lang-en'),
+    ko: document.getElementById('m-lang-ko')
   };
 
-  function setLang(lang) {
-    window.DBV_I18N.setLang(lang);
+  function setLang(lang, auto) {
+    window.DBV_I18N.setLang(lang, !auto);
     Object.keys(btnLangs).forEach(function (k) {
       if (btnLangs[k]) btnLangs[k].classList.remove('active');
       if (mBtnLangs[k]) mBtnLangs[k].classList.remove('active');
@@ -1868,9 +1886,24 @@
 
   document.getElementById('btn-export-typst').addEventListener('click', exportToTypst);
 
-  document.getElementById('btn-print').addEventListener('click', function () { window.print(); });
+  // Cabecera de impresion: el navegador imprime document.title en la cabecera; durante la
+  // impresion se sustituye por el nombre del archivo abierto y se restaura despues. Se usa la
+  // cabecera nativa (no cuadros @page) para conservar la casilla "Encabezados y pies de pagina".
+  var titleBeforePrint = null;
+  window.addEventListener('beforeprint', function () {
+    if (currentDoc && currentDoc.file_name && titleBeforePrint === null) {
+      titleBeforePrint = document.title;
+      document.title = currentDoc.file_name;
+    }
+  });
+  window.addEventListener('afterprint', function () {
+    if (titleBeforePrint !== null) { document.title = titleBeforePrint; titleBeforePrint = null; }
+  });
+  function printDocument() { window.print(); }
 
-  // ─── Always on Top (por ventana, sin persistencia — ver memory.md ADR-023) ─
+  document.getElementById('btn-print').addEventListener('click', printDocument);
+
+  // ─── Always on Top (se recuerda entre sesiones en localStorage; ADR-023 original: sin persistencia) ─
   (function () {
     var btnAlwaysOnTop = document.getElementById('btn-always-on-top');
     if (isAndroid) {
@@ -1889,10 +1922,53 @@
     btnAlwaysOnTop.addEventListener('click', function () {
       currentWindow.isAlwaysOnTop().then(function (isActive) {
         return currentWindow.setAlwaysOnTop(!isActive).then(function () { return !isActive; });
-      }).then(setButtonState).catch(function (err) {
+      }).then(function (active) {
+        try { localStorage.setItem('dbv-md-always-on-top', active ? '1' : '0'); } catch (_) {}
+        setButtonState(active);
+      }).catch(function (err) {
         showError('[always-on-top] ' + err);
       });
     });
+
+    // Restaurar el estado guardado al arrancar
+    var savedTop = false;
+    try { savedTop = localStorage.getItem('dbv-md-always-on-top') === '1'; } catch (_) {}
+    if (savedTop) {
+      currentWindow.setAlwaysOnTop(true).then(function () { setButtonState(true); }).catch(function (err) {
+        showError('[always-on-top] ' + err);
+      });
+    }
+  })();
+
+  // ─── Ancho de lectura ajustable (estrecho / normal / ancho / completo) ──────
+  (function () {
+    var btn = document.getElementById('btn-content-width');
+    if (!btn) return;
+    var PRESETS = [
+      { id: 'narrow', width: '640px',  max: '1100px' },
+      { id: 'normal', width: '800px',  max: '1100px' },
+      { id: 'wide',   width: '1000px', max: '1100px' },
+      { id: 'full',   width: '100%',   max: '100%' }
+    ];
+    var idx = 1;
+    try {
+      var saved = localStorage.getItem('dbv-md-content-width');
+      for (var i = 0; i < PRESETS.length; i++) if (PRESETS[i].id === saved) idx = i;
+    } catch (_) {}
+
+    function apply() {
+      var p = PRESETS[idx];
+      document.documentElement.style.setProperty('--reading-width', p.width);
+      document.documentElement.style.setProperty('--content-max', p.max);
+      btn.title = t('toolbar.contentWidth', { label: t('width.' + p.id) });
+    }
+    btn.addEventListener('click', function () {
+      idx = (idx + 1) % PRESETS.length;
+      try { localStorage.setItem('dbv-md-content-width', PRESETS[idx].id); } catch (_) {}
+      apply();
+    });
+    document.addEventListener('dbv-lang-changed', apply);
+    apply();
   })();
 
   // ─── Confirmación al cerrar con cambios sin guardar ─────────────────────
@@ -2243,10 +2319,20 @@
     updateModifiedBadge();
   }
 
+  // Recuerda si el usuario dejó activado el Modo Edición (se aplica a los documentos que abra después).
+  function getEditPref() {
+    try { return localStorage.getItem('dbv-md-edit-pref') === '1'; } catch (_) { return false; }
+  }
+  function saveEditPref(on) {
+    try { localStorage.setItem('dbv-md-edit-pref', on ? '1' : '0'); } catch (_) {}
+  }
+
   function toggleEditMode() {
     if (isAndroid || !currentDoc || isRemoteDoc(currentDoc)) return;
     confirmDiscardUnsavedChanges().then(function (proceed) {
-      if (proceed) setEditMode(!editMode);
+      if (!proceed) return;
+      setEditMode(!editMode);
+      saveEditPref(editMode);
     });
   }
 
@@ -2606,7 +2692,7 @@
     if      (mod && e.key === 'f') { e.preventDefault(); searchPanel.open(); }
     else if (mod && e.key === 'n') { e.preventDefault(); createNewFile(); }
     else if (mod && e.key === 'o') { e.preventDefault(); openFileDialog(); }
-    else if (mod && e.key === 'p') { e.preventDefault(); window.print(); }
+    else if (mod && e.key === 'p') { e.preventDefault(); printDocument(); }
     else if (mod && e.key === 'e') { e.preventDefault(); toggleEditMode(); }
     else if (mod && e.key === 's') { e.preventDefault(); saveCurrentDocument(); }
     else if (mod && e.key === 'k') { e.preventDefault(); if (window.DBVFileTree) window.DBVFileTree.toggleQuickOpen(); }
@@ -2625,10 +2711,13 @@
   // =========================================================================
 
   function init() {
-    setLang(window.DBV_I18N.getLang());
+    setLang(window.DBV_I18N.getLang(), true);
 
     var theme = localStorage.getItem('dbv-md-theme') || 'dark';
     setTheme(theme);
+
+    // Restaurar panel lateral abierto/cerrado (solo pantalla ancha)
+    if (getTocPref() === 'open' && window.innerWidth > 768) setTocVisible(true);
 
     // Restaurar zoom guardado
     var savedZoom = parseInt(localStorage.getItem('dbv-md-zoom') || '100', 10);

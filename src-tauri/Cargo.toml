@@ -44,6 +44,8 @@ ctor = "0.8"
 # y ARCHITECTURA.md §5.
 [target.'cfg(not(target_os = "android"))'.dependencies]
 tauri-plugin-single-instance = "2.4.3"
+# Recuerda posicion/tamano/maximizado de la ventana entre sesiones (2.4.x: compatible con tauri 2.11).
+tauri-plugin-window-state = "~2.4"
 
 # Slice 1 (versión Android, ver implementation_plan.md): capa mínima de Storage Access
 # Framework (SAF), primer código Kotlin del proyecto — sin equivalente de escritorio

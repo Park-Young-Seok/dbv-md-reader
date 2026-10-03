@@ -58,6 +58,7 @@
     tabFilesBtn.classList.toggle('active', filesActive);
     tocPanelEl.classList.toggle('hidden', filesActive);
     filesPanelEl.classList.toggle('hidden', !filesActive);
+    try { localStorage.setItem('dbv-md-sidebar-tab', filesActive ? 'files' : 'index'); } catch (_) {}
   }
   tabIndexBtn.addEventListener('click', function () { setActiveTab('index'); });
   tabFilesBtn.addEventListener('click', function () { setActiveTab('files'); });
@@ -355,4 +356,7 @@
 
   resetTree();
   showTreeEmptyState();
+
+  // Restaurar la pestaña activa del panel lateral (Índice / Archivos)
+  try { if (localStorage.getItem('dbv-md-sidebar-tab') === 'files') setActiveTab('files'); } catch (_) {}
 })();
