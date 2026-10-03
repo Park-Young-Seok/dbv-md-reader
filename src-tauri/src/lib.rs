@@ -166,8 +166,132 @@ fn open_document_window(app: &tauri::AppHandle, path: String) -> tauri::Result<(
         .center()
         .initialization_script(&init_script)
         .build()?;
+    // Posición/tamaño de la última ventana de documento cerrada. Se aplica DESPUÉS de crear la
+    // ventana y sin pasar por tauri-plugin-window-state: ese plugin, al restaurar una etiqueta
+    // ya conocida mientras se atiende el mensaje de instancia única, dejaba la app colgada.
+    if let Some(g) = load_doc_geometry(app) {
+        let _ = window.set_size(tauri::PhysicalSize::new(g.width, g.height));
+        let _ = window.set_position(tauri::PhysicalPosition::new(g.x, g.y));
+    }
+    let app_for_save = app.clone();
+    let window_for_save = window.clone();
+    window.on_window_event(move |event| {
+        if let tauri::WindowEvent::CloseRequested { .. } = event {
+            save_doc_geometry(&app_for_save, &window_for_save);
+        }
+    });
     focus_window(&window);
+    // La cascada se aplica en una vuelta posterior del bucle, no mientras se despacha el mensaje.
+    let app_handle = app.clone();
+    let new_window = window.clone();
+    std::thread::spawn(move || {
+        std::thread::sleep(std::time::Duration::from_millis(120));
+        let app_for_main = app_handle.clone();
+        let _ = app_handle.run_on_main_thread(move || cascade_new_window(&app_for_main, &new_window));
+    });
     Ok(())
+}
+
+/// Geometría (píxeles físicos) de la última ventana de documento cerrada.
+#[cfg(desktop)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Copy)]
+struct DocWindowGeometry {
+    x: i32,
+    y: i32,
+    width: u32,
+    height: u32,
+}
+
+#[cfg(desktop)]
+fn doc_geometry_path(app: &tauri::AppHandle) -> Option<std::path::PathBuf> {
+    app.path().app_config_dir().ok().map(|d| d.join("doc-window-state.json"))
+}
+
+/// Lee la geometría guardada; la descarta si es absurda o si su esquina ya no cae en un monitor
+/// conectado (p. ej. se desenchufó una pantalla).
+#[cfg(desktop)]
+fn load_doc_geometry(app: &tauri::AppHandle) -> Option<DocWindowGeometry> {
+    let text = std::fs::read_to_string(doc_geometry_path(app)?).ok()?;
+    let g: DocWindowGeometry = serde_json::from_str(&text).ok()?;
+    if g.width < 400 || g.height < 300 {
+        return None;
+    }
+    let on_screen = app.available_monitors().ok()?.iter().any(|m| {
+        let (p, sz) = (m.position(), m.size());
+        g.x >= p.x - 50
+            && g.y >= p.y - 50
+            && g.x < p.x + sz.width as i32 - 100
+            && g.y < p.y + sz.height as i32 - 100
+    });
+    on_screen.then_some(g)
+}
+
+/// Guarda la geometría de una ventana de documento al cerrarse (si no está minimizada/maximizada).
+#[cfg(desktop)]
+fn save_doc_geometry(app: &tauri::AppHandle, window: &tauri::WebviewWindow) {
+    if window.is_minimized().unwrap_or(false) || window.is_maximized().unwrap_or(false) {
+        return;
+    }
+    let (Ok(pos), Ok(size)) = (window.outer_position(), window.inner_size()) else {
+        return;
+    };
+    let Some(path) = doc_geometry_path(app) else {
+        return;
+    };
+    if let Some(dir) = path.parent() {
+        let _ = std::fs::create_dir_all(dir);
+    }
+    let g = DocWindowGeometry { x: pos.x, y: pos.y, width: size.width, height: size.height };
+    if let Ok(text) = serde_json::to_string(&g) {
+        let _ = std::fs::write(path, text);
+    }
+}
+
+/// Desplaza una ventana recién abierta en cascada si cae (casi) encima de otra ya visible, para
+/// que abrir un documento con la app en marcha no tape la ventana existente. El desplazamiento
+/// se repite hasta quedar libre (máx. 16 pasos); si se sale del monitor vuelve a su esquina
+/// superior izquierda. Las distancias se escalan con el factor DPI de la ventana.
+#[cfg(desktop)]
+fn cascade_new_window(app: &tauri::AppHandle, window: &tauri::WebviewWindow) {
+    let (Ok(mut pos), Ok(size)) = (window.outer_position(), window.outer_size()) else {
+        return;
+    };
+    let scale = window.scale_factor().unwrap_or(1.0);
+    let step = (32.0 * scale).round() as i32;
+    let tolerance = (16.0 * scale).round() as i32;
+    let others: Vec<tauri::PhysicalPosition<i32>> = app
+        .webview_windows()
+        .values()
+        .filter(|w| {
+            w.label() != window.label()
+                && w.is_visible().unwrap_or(false)
+                && !w.is_minimized().unwrap_or(false)
+        })
+        .filter_map(|w| w.outer_position().ok())
+        .collect();
+    let mut moved = false;
+    for _ in 0..16 {
+        let overlaps = others
+            .iter()
+            .any(|o| (o.x - pos.x).abs() < tolerance && (o.y - pos.y).abs() < tolerance);
+        if !overlaps {
+            break;
+        }
+        pos.x += step;
+        pos.y += step;
+        moved = true;
+        if let Ok(Some(monitor)) = window.current_monitor() {
+            let (mx, my) = (monitor.position().x, monitor.position().y);
+            let (mw, mh) = (monitor.size().width as i32, monitor.size().height as i32);
+            if pos.x + size.width as i32 > mx + mw || pos.y + size.height as i32 > my + mh {
+                pos.x = mx + step;
+                pos.y = my + step;
+            }
+        }
+    }
+    if moved {
+        let _ = window.set_position(pos);
+    }
 }
 
 /// Opens `path` in a new window, unless a live window already displays that exact document —
